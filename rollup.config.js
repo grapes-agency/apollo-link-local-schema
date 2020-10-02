@@ -22,6 +22,9 @@ export default [
       {
         writeBundle: () => {
           delete packageJson.scripts
+          delete packageJson.devDependencies
+          delete packageJson.eslintConfig
+          delete packageJson.prettier
 
           fs.writeFileSync(
             './dist/package.json',
