@@ -1,0 +1,53 @@
+{
+  "name": "@grapes-agency/apollo-link-local-schema",
+  "version": "1.0.0-alpha.1",
+  "description": "Lightweight local schema resolver for @apollo/client",
+  "main": "index.js",
+  "scripts": {
+    "build": "rollup -c",
+    "watch": "npm run build -- -w",
+    "release": "standard-version --no-verify --releaseCommitMessageFormat \"chore(release): Release v%s :tada:\"",
+    "pre-release": "npm run release -- --prerelease alpha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/grapes-agency/apollo-link-local-schema.git"
+  },
+  "author": "Torsten Blindert",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/grapes-agency/apollo-link-local-schema/issues"
+  },
+  "homepage": "https://github.com/grapes-agency/apollo-link-local-schema#readme",
+  "prettier": "@grapes-agency/eslint-config/prettier",
+  "eslintConfig": {
+    "extends": [
+      "@grapes-agency/eslint-config/rules/base",
+      "@grapes-agency/eslint-config/rules/prettier"
+    ],
+    "rules": {
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/explicit-function-return-type": "off",
+      "@typescript-eslint/consistent-type-assertions": "off",
+      "consistent-return": "off",
+      "complexity": "off"
+    }
+  },
+  "peerDependencies": {
+    "@apollo/client": "^3.2.1",
+    "graphql": "^15.3.0"
+  },
+  "devDependencies": {
+    "@apollo/client": "^3.2.1",
+    "@grapes-agency/eslint-config": "^1.5.5",
+    "graphql": "^15.3.0",
+    "rollup": "^2.28.2",
+    "rollup-plugin-clear": "^2.0.7",
+    "rollup-plugin-copy-glob": "^0.3.1",
+    "rollup-plugin-graphql-tag": "^0.1.0",
+    "rollup-plugin-typescript2": "^0.27.3",
+    "standard-version": "^9.0.0",
+    "typescript": "^4.0.3"
+  },
+  "dependencies": {}
+}
