@@ -6,7 +6,8 @@ export type DocumentsPair = readonly [DocumentNode | null, DocumentNode | null]
 export const splitDocument = (document: DocumentNode, splitDirective: string): DocumentsPair => {
   checkDocument(document)
 
-  const hasLocalDirective = (field: FieldNode) => Boolean(field.directives?.find(directive => directive.name.value === 'local'))
+  const hasLocalDirective = (field: FieldNode) =>
+    Boolean(field.directives?.find(directive => directive.name.value === splitDirective))
 
   const localParentFields = new Set<FieldNode | FragmentDefinitionNode>()
   const usedFragments = new Set<string>()

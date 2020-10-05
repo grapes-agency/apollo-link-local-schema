@@ -7,6 +7,7 @@ import { mergeDocuments, mapResolvers, DocumentsPair, splitDocument, cleanResult
 
 interface LocalSchemaLinkOptions<Context = any> {
   assumeLocal?: boolean
+  discriminationDirective?: string
   typeDefs: DocumentNode | Array<DocumentNode>
   resolvers: Resolvers<Context>
   context?: Context
@@ -21,8 +22,16 @@ export class LocalSchemaLink<Context = any> extends ApolloLink {
   private assumeLocal: boolean
   private typeMap: TypeMap
   private validateQuery: boolean
+  private discriminationDirective: string
 
-  constructor({ typeDefs, resolvers, context, assumeLocal, validateQuery = true }: LocalSchemaLinkOptions<Context>) {
+  constructor({
+    typeDefs,
+    resolvers,
+    context,
+    assumeLocal,
+    validateQuery = true,
+    discriminationDirective = 'local',
+  }: LocalSchemaLinkOptions<Context>) {
     super()
     this.context = context
     this.assumeLocal = Boolean(assumeLocal)
@@ -30,6 +39,7 @@ export class LocalSchemaLink<Context = any> extends ApolloLink {
     this.resolvers = mappedResolvers
     this.typeMap = typeMap
     this.validateQuery = validateQuery
+    this.discriminationDirective = discriminationDirective
   }
 
   private getLocalState(operation: Operation) {
@@ -47,7 +57,7 @@ export class LocalSchemaLink<Context = any> extends ApolloLink {
       return this.processedDocuments.get(document)!
     }
 
-    const documentsPair = splitDocument(document, 'local')
+    const documentsPair = splitDocument(document, this.discriminationDirective)
     this.processedDocuments.set(document, documentsPair)
     return documentsPair
   }
