@@ -10,7 +10,7 @@ interface LocalSchemaLinkOptions<Context = any> {
   discriminationDirective?: string
   typeDefs: DocumentNode | Array<DocumentNode>
   resolvers: Resolvers<Context>
-  context?: Context
+  context?: Context | (() => Context)
   validateQuery?: boolean
 }
 
@@ -18,7 +18,7 @@ export class LocalSchemaLink<Context = any> extends ApolloLink {
   private localState: LocalState<NormalizedCacheObject> | null = null
   private resolvers: Resolvers<Context>
   private processedDocuments = new Map<DocumentNode, DocumentsPair>()
-  private context: Context | undefined
+  private context: Context | (() => Context) | undefined
   private assumeLocal: boolean
   private typeMap: TypeMap
   private validateQuery: boolean
@@ -93,11 +93,13 @@ export class LocalSchemaLink<Context = any> extends ApolloLink {
             return
           }
 
+          const context = typeof this.context === 'function' ? (this.context as () => Context)() : this.context
+
           localState
             .runResolvers({
               document: localQuery,
               remoteResult,
-              context: this.context,
+              context,
               variables,
             })
             .then(({ data, errors }) => {
