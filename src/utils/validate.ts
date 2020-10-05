@@ -42,7 +42,7 @@ export const validate = ({ document, typeMap }: ValidateOptions) => {
         processSelectionSet(fragment.selectionSet, type)
       }
 
-      if (selection.kind === 'Field') {
+      if (selection.kind === 'Field' && selection.name.value !== '__typename') {
         const field = type.fields?.find(f => f.name.value === selection.name.value)
         if (!field) {
           throw new Error(`Cannot query field "${selection.name.value}" on type "${type.name.value}".`)
