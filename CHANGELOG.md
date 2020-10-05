@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.0.0-alpha.4](https://github.com/grapes-agency/apollo-link-local-schema/compare/v1.0.0-alpha.2...v1.0.0-alpha.4) (2020-10-05)
+
+
+### Features
+
+* allow context to be created on each request ([47f9b37](https://github.com/grapes-agency/apollo-link-local-schema/commit/47f9b3770139a1959945339602903b76971bf8b1))
+
+## [1.0.0-alpha.3](https://github.com/grapes-agency/apollo-link-local-schema/compare/v1.0.0-alpha.2...v1.0.0-alpha.3) (2020-10-05)
+
+
+### Features
+
+* allow context to be created on each request ([47f9b37](https://github.com/grapes-agency/apollo-link-local-schema/commit/47f9b3770139a1959945339602903b76971bf8b1))
+
 ## 1.0.0-alpha.2 (2020-10-05)
 
 
