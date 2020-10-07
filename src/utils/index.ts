@@ -1,5 +1,6 @@
 export * from './mergeDocuments'
-export * from './splitDocuments'
+export * from './splitDocumentByDirective'
+export * from './splitDocumentByOperation'
 export * from './mapResolvers'
 export * from './cleanResult'
 export * from './validate'

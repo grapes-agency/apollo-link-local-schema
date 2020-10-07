@@ -1,5 +1,7 @@
 import type { FragmentMap } from '@apollo/client/utilities'
-import type { FieldNode, ObjectTypeDefinitionNode } from 'graphql'
+import type { FieldNode, ObjectTypeDefinitionNode, DocumentNode } from 'graphql'
+
+export type DocumentsPair = readonly [DocumentNode | null, DocumentNode | null]
 
 export type Resolver<Context = any> = (
   rootValue: any,

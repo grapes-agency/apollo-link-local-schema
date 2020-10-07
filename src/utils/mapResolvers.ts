@@ -6,6 +6,7 @@ import type { GraphQLScalarType } from 'graphql'
 import { Resolvers, Resolver, TypeMap } from '../interfaces'
 
 import { addTypesnames } from './addTypenames'
+import { mapSubscription, isSubscriptionResolver } from './mapSubscription'
 import { isObjectTypeDefinition, getTypeName, isScalarTypeDefinition } from './node'
 
 export const mapResolvers = <C>(resolvers: Resolvers<C>, typeDefs: DocumentNode): [Resolvers<C>, TypeMap] => {
@@ -53,11 +54,22 @@ export const mapResolvers = <C>(resolvers: Resolvers<C>, typeDefs: DocumentNode)
                 }
               }
 
-              return Promise.resolve(fieldResolver(root, { ...defaultArgs, ...args }, context, info)).then(result => {
+              const mergedArgs = { ...defaultArgs, ...args }
+              return Promise.resolve(fieldResolver(root, mergedArgs, context, info)).then(result => {
                 const __typename = getTypeName(fieldDefinition.type)
                 const targetType = typeMap.get(__typename)
+
                 if (!targetType) {
                   return result
+                }
+
+                if (isSubscriptionResolver(result)) {
+                  return mapSubscription({ fieldName, resolver: result, objectType: targetType, typeMap })(
+                    root,
+                    mergedArgs,
+                    context,
+                    info
+                  )
                 }
 
                 return addTypesnames({

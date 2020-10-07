@@ -2,8 +2,8 @@ import { ApolloLink, NormalizedCacheObject, Operation, NextLink, FetchResult, Ob
 import { LocalState } from '@apollo/client/core/LocalState'
 import { DocumentNode } from 'graphql'
 
-import { Resolvers, TypeMap } from './interfaces'
-import { mergeDocuments, mapResolvers, DocumentsPair, splitDocument, cleanResult, validate } from './utils'
+import { Resolvers, TypeMap, DocumentsPair } from './interfaces'
+import { mergeDocuments, mapResolvers, splitDocumentByDirective, cleanResult, validate, splitDocumentByOperation } from './utils'
 
 interface LocalSchemaLinkOptions<Context = any> {
   assumeLocal?: boolean
@@ -52,19 +52,19 @@ export class LocalSchemaLink<Context = any> extends ApolloLink {
     return this.localState
   }
 
-  private splitDocument(document: DocumentNode): DocumentsPair {
+  private splitDocumentByDirective(document: DocumentNode): DocumentsPair {
     if (this.processedDocuments.has(document)) {
       return this.processedDocuments.get(document)!
     }
 
-    const documentsPair = splitDocument(document, this.discriminationDirective)
+    const documentsPair = splitDocumentByDirective(document, this.discriminationDirective)
     this.processedDocuments.set(document, documentsPair)
     return documentsPair
   }
 
   request(operation: Operation, forward?: NextLink): Observable<FetchResult> | null {
     const { query, variables } = operation
-    const [localQuery, nonLocalQuery] = this.assumeLocal ? [query, null] : this.splitDocument(query)
+    const [localQuery, nonLocalQuery] = this.assumeLocal ? [query, null] : this.splitDocumentByDirective(query)
 
     let nonLocalObservable = Observable.of<FetchResult>({ data: {} })
 
@@ -80,37 +80,80 @@ export class LocalSchemaLink<Context = any> extends ApolloLink {
       }
     }
 
+    const [subscriptionQuery, normalQuery] = splitDocumentByOperation(localQuery!, 'subscription')
+
     const localState = this.getLocalState(operation)
-    return nonLocalObservable.flatMap(
-      remoteResult =>
-        new Observable(observer => {
-          try {
-            if (this.validateQuery) {
-              validate({ document: localQuery, typeMap: this.typeMap })
+
+    let context: Context
+    if (normalQuery) {
+      return nonLocalObservable.flatMap(
+        remoteResult =>
+          new Observable(observer => {
+            try {
+              if (this.validateQuery) {
+                validate({ document: localQuery, typeMap: this.typeMap })
+              }
+            } catch (error) {
+              observer.error({ errors: [{ message: error.message }] })
+              return
             }
-          } catch (error) {
-            observer.error({ errors: [{ message: error.message }] })
+
+            context = typeof this.context === 'function' ? (this.context as () => any)() : this.context
+
+            localState
+              .runResolvers({
+                document: normalQuery,
+                remoteResult,
+                context,
+                variables,
+              })
+              .then(({ data, errors }) => {
+                observer.next({ data: cleanResult({ data, document: localQuery }), errors })
+                observer.complete()
+              })
+              .catch(error => {
+                observer.error({ errors: [{ message: error.message }] })
+              })
+          })
+      )
+    }
+
+    return new Observable(observer => {
+      let subscription: ZenObservable.Subscription
+
+      localState
+        .runResolvers({ document: subscriptionQuery, remoteResult: { data: {} }, context, variables })
+        .then(({ data, errors }) => {
+          if (!data) {
+            observer.complete()
             return
           }
 
-          const context = typeof this.context === 'function' ? (this.context as () => Context)() : this.context
+          if (errors) {
+            observer.next({ data: null, errors })
+            observer.complete()
+            return
+          }
 
-          localState
-            .runResolvers({
-              document: localQuery,
-              remoteResult,
-              context,
-              variables,
-            })
-            .then(({ data, errors }) => {
-              observer.next({ data: cleanResult({ data, document: localQuery }), errors })
-              observer.complete()
-            })
-            .catch(error => {
-              observer.error({ errors: [{ message: error.message }] })
-            })
+          const observers: Array<Observable<any>> = []
+          Object.entries(data as { [key: string]: Observable<any> }).forEach(([key, observable]) => {
+            observers.push(observable.map(result => ({ [key]: result })))
+          })
+
+          subscription = Observable.of<FetchResult>({ data: {} })
+            .concat(...observers)
+            .subscribe(observer)
         })
-    )
+        .catch(error => {
+          observer.error({ errors: [{ message: error.message }] })
+        })
+
+      return () => {
+        if (subscription) {
+          subscription.unsubscribe()
+        }
+      }
+    })
   }
 }
 

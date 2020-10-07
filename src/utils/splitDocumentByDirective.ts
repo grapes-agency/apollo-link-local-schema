@@ -1,11 +1,9 @@
-import { checkDocument, hasDirectives } from '@apollo/client/utilities'
+import { hasDirectives } from '@apollo/client/utilities'
 import { DocumentNode, FieldNode, FragmentDefinitionNode, visit } from 'graphql'
 
-export type DocumentsPair = readonly [DocumentNode | null, DocumentNode | null]
+import { DocumentsPair } from '../interfaces'
 
-export const splitDocument = (document: DocumentNode, splitDirective: string): DocumentsPair => {
-  checkDocument(document)
-
+export const splitDocumentByDirective = (document: DocumentNode, splitDirective: string): DocumentsPair => {
   const hasLocalDirective = (field: FieldNode) =>
     Boolean(field.directives?.find(directive => directive.name.value === splitDirective))
 
