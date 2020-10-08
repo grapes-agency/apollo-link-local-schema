@@ -55,14 +55,19 @@ export const mapResolvers = <C>(resolvers: Resolvers<C>, typeDefs: DocumentNode)
               }
 
               const mergedArgs = { ...defaultArgs, ...args }
+              const __typename = getTypeName(fieldDefinition.type)
+              const targetType = typeMap.get(__typename)
+
+              if (isSubscriptionResolver(fieldResolver)) {
+                return mapSubscription({ fieldName, resolver: fieldResolver, objectType: targetType, typeMap })(
+                  root,
+                  mergedArgs,
+                  context,
+                  info
+                )
+              }
+
               return Promise.resolve(fieldResolver(root, mergedArgs, context, info)).then(result => {
-                const __typename = getTypeName(fieldDefinition.type)
-                const targetType = typeMap.get(__typename)
-
-                if (!targetType) {
-                  return result
-                }
-
                 if (isSubscriptionResolver(result)) {
                   return mapSubscription({ fieldName, resolver: result, objectType: targetType, typeMap })(
                     root,
@@ -70,6 +75,10 @@ export const mapResolvers = <C>(resolvers: Resolvers<C>, typeDefs: DocumentNode)
                     context,
                     info
                   )
+                }
+
+                if (!targetType) {
+                  return result
                 }
 
                 return addTypesnames({

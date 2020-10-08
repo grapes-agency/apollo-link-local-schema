@@ -3,6 +3,7 @@ import { LocalState } from '@apollo/client/core/LocalState'
 import { DocumentNode } from 'graphql'
 
 import { Resolvers, TypeMap, DocumentsPair } from './interfaces'
+import { addSchemaResolver } from './resolvers'
 import { mergeDocuments, mapResolvers, splitDocumentByDirective, cleanResult, validate, splitDocumentByOperation } from './utils'
 
 interface LocalSchemaLinkOptions<Context = any> {
@@ -12,6 +13,7 @@ interface LocalSchemaLinkOptions<Context = any> {
   resolvers: Resolvers<Context>
   context?: Context | (() => Context)
   validateQuery?: boolean
+  introspection?: boolean
 }
 
 export class LocalSchemaLink<Context = any> extends ApolloLink {
@@ -30,12 +32,19 @@ export class LocalSchemaLink<Context = any> extends ApolloLink {
     context,
     assumeLocal,
     validateQuery = true,
+    introspection = true,
     discriminationDirective = 'local',
   }: LocalSchemaLinkOptions<Context>) {
     super()
     this.context = context
     this.assumeLocal = Boolean(assumeLocal)
-    const [mappedResolvers, typeMap] = mapResolvers(resolvers, mergeDocuments(Array.isArray(typeDefs) ? typeDefs : [typeDefs]))
+    const mergedTypeDefs = mergeDocuments(Array.isArray(typeDefs) ? typeDefs : [typeDefs])
+    const [mappedResolvers, typeMap] = mapResolvers(resolvers, mergedTypeDefs)
+
+    if (introspection) {
+      addSchemaResolver(mappedResolvers, mergedTypeDefs)
+    }
+
     this.resolvers = mappedResolvers
     this.typeMap = typeMap
     this.validateQuery = validateQuery
@@ -108,7 +117,8 @@ export class LocalSchemaLink<Context = any> extends ApolloLink {
                 variables,
               })
               .then(({ data, errors }) => {
-                observer.next({ data: cleanResult({ data, document: localQuery }), errors })
+                const cleanedData = cleanResult({ data, document: localQuery })
+                observer.next({ data: cleanedData, errors })
                 observer.complete()
               })
               .catch(error => {
@@ -135,14 +145,21 @@ export class LocalSchemaLink<Context = any> extends ApolloLink {
             return
           }
 
-          const observers: Array<Observable<any>> = []
+          const observables: Array<Observable<any>> = []
           Object.entries(data as { [key: string]: Observable<any> }).forEach(([key, observable]) => {
-            observers.push(observable.map(result => ({ [key]: result })))
+            observables.push(observable.map(result => ({ [key]: result })))
           })
 
-          subscription = Observable.of<FetchResult>({ data: {} })
-            .concat(...observers)
-            .subscribe(observer)
+          if (observables.length === 0) {
+            observer.complete()
+            return
+          }
+
+          let observable = observables[0]
+          if (observables.length > 1) {
+            observable = observable.concat(...observables.slice(1))
+          }
+          subscription = observable.subscribe(observer)
         })
         .catch(error => {
           observer.error({ errors: [{ message: error.message }] })

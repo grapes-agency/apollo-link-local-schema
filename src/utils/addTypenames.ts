@@ -2,7 +2,7 @@ import type { FragmentMap } from '@apollo/client/utilities'
 import type { ObjectTypeDefinitionNode, FieldNode } from 'graphql'
 
 import { extendSelection } from './extendSelection'
-import { getTypeName, isListType } from './node'
+import { getTypeName, isDeepListType } from './node'
 
 interface ProcessResultOptions {
   field: FieldNode
@@ -42,7 +42,7 @@ export const addTypesnames = ({ field, fragmentMap, objectType, typeMap, data }:
       return
     }
 
-    if (isListType(selectionField.type)) {
+    if (isDeepListType(selectionField.type)) {
       if (!Array.isArray(currentData)) {
         return
       }

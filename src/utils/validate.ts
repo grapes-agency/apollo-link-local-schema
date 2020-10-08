@@ -19,7 +19,7 @@ export const validate = ({ document, typeMap }: ValidateOptions) => {
 
   fragments.forEach(fragment => {
     const typeName = fragment.typeCondition.name.value
-    if (!typeMap.has(typeName)) {
+    if (!typeMap.has(typeName) && !typeName.startsWith('__')) {
       throw new Error(`Unknown type "${typeName}".`)
     }
   })
@@ -28,7 +28,7 @@ export const validate = ({ document, typeMap }: ValidateOptions) => {
     selectionSet.selections.forEach(selection => {
       if (selection.kind === 'InlineFragment') {
         const typeName = selection.typeCondition!.name.value
-        if (!typeMap.has(typeName)) {
+        if (!typeMap.has(typeName) && !typeName.startsWith('__')) {
           throw new Error(`Unknown type "${typeName}".`)
         }
         processSelectionSet(selection.selectionSet, type)
@@ -42,7 +42,7 @@ export const validate = ({ document, typeMap }: ValidateOptions) => {
         processSelectionSet(fragment.selectionSet, type)
       }
 
-      if (selection.kind === 'Field' && selection.name.value !== '__typename') {
+      if (selection.kind === 'Field' && !selection.name.value.startsWith('__')) {
         const field = type.fields?.find(f => f.name.value === selection.name.value)
         if (!field) {
           throw new Error(`Cannot query field "${selection.name.value}" on type "${type.name.value}".`)

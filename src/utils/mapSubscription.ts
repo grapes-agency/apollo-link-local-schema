@@ -16,7 +16,7 @@ export const isSubscriptionResolver = (resolver: any): resolver is SubscriptionR
 interface MapSubscriptionOptions<T> {
   fieldName: string
   resolver: SubscriptionResolver<T>
-  objectType: ObjectTypeDefinitionNode
+  objectType?: ObjectTypeDefinitionNode
   typeMap: Map<string, ObjectTypeDefinitionNode>
 }
 
@@ -30,7 +30,9 @@ export const mapSubscription = <C, T>({ fieldName, resolver, objectType, typeMap
 
   return new Observable(observer => {
     let stopped = false
-    Promise.resolve(resolver.subscribe(root, args, context, info)).then(asyncIterator => {
+    let asyncIterator: AsyncIterator<T>
+    Promise.resolve(resolver.subscribe(root, args, context, info)).then(iterator => {
+      asyncIterator = iterator
       if (stopped) {
         return
       }
@@ -44,12 +46,14 @@ export const mapSubscription = <C, T>({ fieldName, resolver, objectType, typeMap
               }
 
               observer.next({
-                [fieldName]: addTypesnames({
-                  ...info,
-                  data: transformedValue,
-                  objectType,
-                  typeMap,
-                }),
+                [fieldName]: objectType
+                  ? addTypesnames({
+                      ...info,
+                      data: transformedValue,
+                      objectType,
+                      typeMap,
+                    })
+                  : transformedValue,
               })
             })
           }
@@ -65,6 +69,7 @@ export const mapSubscription = <C, T>({ fieldName, resolver, objectType, typeMap
     })
 
     return () => {
+      asyncIterator?.return?.()
       stopped = true
     }
   })

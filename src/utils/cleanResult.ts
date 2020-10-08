@@ -22,10 +22,6 @@ export const cleanResult = ({ data, document }: CleanResultOptions) => {
 
     const processedData: Record<string, any> = {}
 
-    if (currentData.__typename) {
-      processedData.__typename = currentData.__typename
-    }
-
     selectionSet.selections.forEach(selection => {
       if (selection.kind === 'InlineFragment') {
         Object.assign(processedData, processSelectionSet(selection.selectionSet, currentData))
